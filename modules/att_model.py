@@ -194,7 +194,7 @@ class AttModel(CaptionModel):
                             trigrams[i][prev_two] = [current]
                 # Block used trigrams at next step
                 prev_two_batch = seq[:, t - 2:t]
-                mask = torch.zeros(logprobs.size(), requires_grad=False).cuda()  # batch_size x vocab_size
+                mask = torch.zeros(logprobs.size(), requires_grad=False)#.cuda()  # batch_size x vocab_size
                 for i in range(batch_size):
                     prev_two = (prev_two_batch[i][0].item(), prev_two_batch[i][1].item())
                     if prev_two in trigrams[i]:
@@ -291,7 +291,7 @@ class AttModel(CaptionModel):
                                     trigrams[i][prev_two] = [current]
                         # Block used trigrams at next step
                         prev_two_batch = seq[:, t - 2:t]
-                        mask = torch.zeros(logprobs.size(), requires_grad=False).cuda()  # batch_size x vocab_size
+                        mask = torch.zeros(logprobs.size(), requires_grad=False)#.cuda()  # batch_size x vocab_size
                         for i in range(batch_size):
                             prev_two = (prev_two_batch[i][0].item(), prev_two_batch[i][1].item())
                             if prev_two in trigrams[i]:
