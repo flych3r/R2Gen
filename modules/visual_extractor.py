@@ -7,7 +7,7 @@ from transformers import AutoModelForImageClassification
 class VisualExtractor(nn.Module):
     def __init__(self, args):
         super(VisualExtractor, self).__init__()
-        self.visual_extractor = args.visual_extractor
+        self.visual_extractor = 'resnet101'
         self.pretrained = args.visual_extractor_pretrained
         model = getattr(models, self.visual_extractor)(pretrained=self.pretrained)
         modules = list(model.children())[:-2]

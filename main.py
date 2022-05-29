@@ -25,7 +25,7 @@ def parse_agrs():
     parser.add_argument('--batch_size', type=int, default=16, help='the number of samples for a batch')
 
     # Model settings (for visual extractor)
-    parser.add_argument('--visual_extractor', type=str, default='resnet101', help='the visual extractor to be used.')
+    parser.add_argument('--visual_extractor', type=str, default='resnet', help='the visual extractor to be used.')
     parser.add_argument('--visual_extractor_pretrained', type=bool, default=True, help='whether to load the pretrained visual extractor')
 
     # Model settings (for Transformer)
@@ -87,6 +87,18 @@ def parse_agrs():
 
 
 def main():
+    try:
+        import wandb
+        from kaggle_secrets import UserSecretsClient
+        user_secrets = UserSecretsClient()
+        WANDB_KEY = user_secrets.get_secret("WANDB_KEY")
+
+        wandb.login(key=WANDB_KEY)
+        wandb.init(project="r2gen")
+        wandb.run.name = f'{args.visual_extractor}-{wandb.run.name}'
+    except ModuleNotFoundError:
+        pass
+
     # parse arguments
     args = parse_agrs()
 

@@ -4,11 +4,12 @@ python main.py \
     --dataset_name iu_xray \
     --max_seq_length 60 \
     --threshold 3 \
-    --batch_size 16 \
-    --epochs 50 \
+    --batch_size 32 \
+    --epochs 100 \
     --save_dir results/iu_xray \
     --step_size 50 \
     --gamma 0.1 \
     --seed 9223 \
+    --visual_extractor vit \
     --d_vf 768 \
     --n_gpu 1

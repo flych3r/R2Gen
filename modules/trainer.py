@@ -151,10 +151,14 @@ class BaseTrainer(object):
         print("Checkpoint loaded. Resume training from epoch {}".format(self.start_epoch))
 
     def _record_best(self, log):
-        import json
-        log_training_path = os.path.join(self.checkpoint_dir, 'logs.json')
-        with open(log_training_path, 'a') as f:
-            f.write(f'{json.dumps(log)}\n')
+        try:
+            import wandb
+            wandb.log({k.replace('_', '/'): v for k, v in log.items()})
+        except ModuleNotFoundError:
+            import json
+            log_training_path = os.path.join(self.checkpoint_dir, 'logs.json')
+            with open(log_training_path, 'a') as f:
+                f.write(f'{json.dumps(log)}\n')
 
         improved_val = (self.mnt_mode == 'min' and log[self.mnt_metric] <= self.best_recorder['val'][
             self.mnt_metric]) or \
