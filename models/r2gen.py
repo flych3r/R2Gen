@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-from modules.visual_extractor import VisualExtractor
+from modules.visual_extractor import VisualExtractor, VitVisualExtractor
 from modules.encoder_decoder import EncoderDecoder
 
 
@@ -11,7 +11,8 @@ class R2GenModel(nn.Module):
         super(R2GenModel, self).__init__()
         self.args = args
         self.tokenizer = tokenizer
-        self.visual_extractor = VisualExtractor(args)
+        # self.visual_extractor = VisualExtractor(args)
+        self.visual_extractor = VitVisualExtractor(args)
         self.encoder_decoder = EncoderDecoder(args, tokenizer)
         if args.dataset_name == 'iu_xray':
             self.forward = self.forward_iu_xray

@@ -10,5 +10,6 @@ python main.py \
     --step_size 50 \
     --gamma 0.1 \
     --seed 9223 \
-    --ann_path /home/flycher/Documentos/R2Gen/data/iu_xray/annotations_sample.json \
+    --ann_path ./data/iu_xray/annotations_sample.json \
+    --d_vf 768 \
     --n_gpu 0
