@@ -87,6 +87,9 @@ def parse_agrs():
 
 
 def main():
+    # parse arguments
+    args = parse_agrs()
+
     try:
         import wandb
         from kaggle_secrets import UserSecretsClient
@@ -98,9 +101,6 @@ def main():
         wandb.run.name = f'{args.visual_extractor}-{wandb.run.name}'
     except ModuleNotFoundError:
         pass
-
-    # parse arguments
-    args = parse_agrs()
 
     # fix random seeds
     torch.manual_seed(args.seed)
