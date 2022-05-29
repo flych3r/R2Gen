@@ -101,8 +101,6 @@ class BaseTrainer(object):
         self.best_recorder['val']['best_model_from'] = 'val'
         self.best_recorder['test']['best_model_from'] = 'test'
 
-        if not os.path.exists(self.args.record_dir):
-            os.makedirs(self.args.record_dir)
         record_path = os.path.join(self.args.record_dir, self.args.dataset_name+'.csv')
         if not os.path.exists(record_path):
             record_table = pd.DataFrame()
@@ -153,6 +151,11 @@ class BaseTrainer(object):
         print("Checkpoint loaded. Resume training from epoch {}".format(self.start_epoch))
 
     def _record_best(self, log):
+        import json
+        log_training_path = os.path.join(self.checkpoint_dir, 'logs.json')
+        with open(log_training_path, 'a') as f:
+            f.write(f'{json.dumps(log)}\n')
+
         improved_val = (self.mnt_mode == 'min' and log[self.mnt_metric] <= self.best_recorder['val'][
             self.mnt_metric]) or \
                        (self.mnt_mode == 'max' and log[self.mnt_metric] >= self.best_recorder['val'][self.mnt_metric])

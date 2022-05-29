@@ -193,7 +193,7 @@ class CaptionModel(nn.Module):
 
                     it = beam_seq_table[divm][:, :, t - divm].reshape(-1)
                     logprobs_table[divm], state_table[divm] = self.get_logprobs_state(
-                        it,#.cuda(),
+                        it,
                         *(args[divm] + [state_table[divm]])
                     )
                     logprobs_table[divm] = F.log_softmax(logprobs_table[divm] / temperature, dim=-1)
@@ -315,7 +315,7 @@ class CaptionModel(nn.Module):
                     if decoding_constraint and t - divm > 0:
                         logprobsf.scatter_(
                             1,
-                            beam_seq_table[divm][t - divm - 1].unsqueeze(1),#.cuda(),
+                            beam_seq_table[divm][t - divm - 1].unsqueeze(1),
                             float('-inf')
                         )
                     # suppress UNK tokens in the decoding
@@ -359,7 +359,7 @@ class CaptionModel(nn.Module):
 
                     it = beam_seq_table[divm][t - divm]
                     logprobs_table[divm], state_table[divm] = self.get_logprobs_state(
-                        it,#.cuda(),
+                        it,
                         *(args[divm] + [state_table[divm]])
                     )
                     logprobs_table[divm] = F.log_softmax(logprobs_table[divm] / temperature, dim=-1)
@@ -375,7 +375,7 @@ class CaptionModel(nn.Module):
             it = it.view(-1).long()
         elif sample_method == 'gumbel':  # gumbel softmax
             def sample_gumbel(shape, eps=1e-20):
-                U = torch.rand(shape)#.cuda()
+                U = torch.rand(shape)
                 return -torch.log(-torch.log(U + eps) + eps)
 
             def gumbel_softmax_sample(logits, temperature):

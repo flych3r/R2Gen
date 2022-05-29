@@ -4,12 +4,11 @@ python main.py \
     --dataset_name iu_xray \
     --max_seq_length 60 \
     --threshold 3 \
-    --batch_size 2 \
-    --epochs 2 \
+    --batch_size 16 \
+    --epochs 50 \
     --save_dir results/iu_xray \
     --step_size 50 \
     --gamma 0.1 \
     --seed 9223 \
-    --ann_path ./data/iu_xray/annotations_sample.json \
     --d_vf 768 \
-    --n_gpu 0
+    --n_gpu 1
