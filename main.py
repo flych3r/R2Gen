@@ -131,6 +131,11 @@ def main():
     trainer = Trainer(model, criterion, metrics, optimizer, args, lr_scheduler, train_dataloader, val_dataloader, test_dataloader)
     trainer.train()
 
+    try:
+        wandb.finish()
+    except:
+        pass
+
 
 if __name__ == '__main__':
     main()

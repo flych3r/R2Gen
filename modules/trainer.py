@@ -25,8 +25,8 @@ class BaseTrainer(object):
         self.save_period = self.args.save_period
 
         self.mnt_mode = args.monitor_mode
-        self.mnt_metric = 'val_' + args.monitor_metric
-        self.mnt_metric_test = 'test_' + args.monitor_metric
+        self.mnt_metric = 'val/' + args.monitor_metric
+        self.mnt_metric_test = 'val/' + args.monitor_metric
         assert self.mnt_mode in ['min', 'max']
 
         self.mnt_best = inf if self.mnt_mode == 'min' else -inf
@@ -153,7 +153,9 @@ class BaseTrainer(object):
     def _record_best(self, log):
         try:
             import wandb
-            wandb.log({k.replace('_', '/'): v for k, v in log.items()})
+            log_dict = log.copy()
+            epoch = log_dict.pop('epoch')
+            wandb.log(log_dict, step=epoch)
         except ModuleNotFoundError:
             import json
             log_training_path = os.path.join(self.checkpoint_dir, 'logs.json')
@@ -206,7 +208,7 @@ class Trainer(BaseTrainer):
             loss.backward()
             torch.nn.utils.clip_grad_value_(self.model.parameters(), 0.1)
             self.optimizer.step()
-        log = {'train_loss': train_loss / len(self.train_dataloader)}
+        log = {'train/loss': train_loss / len(self.train_dataloader)}
 
         self.model.eval()
         with torch.no_grad():
@@ -221,7 +223,7 @@ class Trainer(BaseTrainer):
                 val_gts.extend(ground_truths)
             val_met = self.metric_ftns({i: [gt] for i, gt in enumerate(val_gts)},
                                        {i: [re] for i, re in enumerate(val_res)})
-            log.update(**{'val_' + k: v for k, v in val_met.items()})
+            log.update(**{'val/' + k: v for k, v in val_met.items()})
 
         self.model.eval()
         with torch.no_grad():
@@ -236,7 +238,7 @@ class Trainer(BaseTrainer):
                 test_gts.extend(ground_truths)
             test_met = self.metric_ftns({i: [gt] for i, gt in enumerate(test_gts)},
                                         {i: [re] for i, re in enumerate(test_res)})
-            log.update(**{'test_' + k: v for k, v in test_met.items()})
+            log.update(**{'val/' + k: v for k, v in test_met.items()})
 
         self.lr_scheduler.step()
 
