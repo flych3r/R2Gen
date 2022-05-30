@@ -11,5 +11,5 @@ python main.py \
     --gamma 0.1 \
     --seed 9223 \
     --visual_extractor resnet \
-    --d_vf 768 \
+    --d_vf 2048 \
     --n_gpu 1
