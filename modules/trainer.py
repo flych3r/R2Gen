@@ -239,9 +239,11 @@ class Trainer(BaseTrainer):
                 ground_truths = self.model.tokenizer.decode_batch(reports_ids[:, 1:].cpu().numpy())
                 test_res.extend(reports)
                 test_gts.extend(ground_truths)
+            print(test_res)
+            print(test_gts)
             test_met = self.metric_ftns({i: [gt] for i, gt in enumerate(test_gts)},
                                         {i: [re] for i, re in enumerate(test_res)})
-            log.update(**{'val/' + k: v for k, v in test_met.items()})
+            log.update(**{'test/' + k: v for k, v in test_met.items()})
 
         self.lr_scheduler.step()
 
