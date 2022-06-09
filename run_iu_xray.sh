@@ -5,11 +5,11 @@ python main.py \
     --max_seq_length 60 \
     --threshold 3 \
     --batch_size 32 \
-    --epochs 100 \
+    --epochs 70 \
     --save_dir results/iu_xray \
     --step_size 50 \
     --gamma 0.1 \
     --seed 9223 \
-    --visual_extractor vit \
-    --d_vf 768 \
+    --visual_extractor resnet \
+    --d_vf 2048 \
     --n_gpu 1
