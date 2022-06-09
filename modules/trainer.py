@@ -45,7 +45,7 @@ class BaseTrainer(object):
             self._resume_checkpoint(args.resume)
 
         self.best_recorder = {'val': {self.mnt_metric: self.mnt_best}}
-        self.logger = WandbLogger() if self.args.logger == 'wandb' else FileLogger()
+        self.logger = WandbLogger(args) if self.args.logger == 'wandb' else FileLogger(args)
 
     @abstractmethod
     def _train_epoch(self, epoch):

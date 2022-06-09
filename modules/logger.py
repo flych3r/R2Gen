@@ -3,6 +3,9 @@ import wandb
 from pathlib import Path
 
 class FileLogger:
+    def __init__(self, args):
+        self.args = args
+
     def log_epoch(self, log, path):
         with open(path, 'a') as f:
             f.write(f'{json.dumps(log)}\n')
@@ -16,6 +19,9 @@ class FileLogger:
 
 
 class WandbLogger:
+    def __init__(self, args):
+        self.args = args
+
     def log_epoch(self, log, _):
         log_dict = log.copy()
         epoch = log_dict.pop('epoch')
@@ -28,7 +34,7 @@ class WandbLogger:
 
     def log_model(self, log, path):
         artifact = wandb.Artifact(
-            f'model',
+            f'model-{self.args.visual_extractor}',
             type='model',
             metadata=log
         )
