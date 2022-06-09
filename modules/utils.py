@@ -56,7 +56,7 @@ def repeat_tensors(n, x):
     return x
 
 
-def parse_agrs(args_str):
+def parse_args(args_str):
     parser = argparse.ArgumentParser()
 
     # Data input settings
