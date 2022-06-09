@@ -6,6 +6,7 @@ import torch
 import pandas as pd
 from tqdm.auto import tqdm
 from numpy import inf
+from .logger import FileLogger, WandbLogger
 
 
 class BaseTrainer(object):
@@ -44,13 +45,14 @@ class BaseTrainer(object):
             self._resume_checkpoint(args.resume)
 
         self.best_recorder = {'val': {self.mnt_metric: self.mnt_best}}
+        self.logger = WandbLogger() if self.args.logger == 'wandb' else FileLogger()
 
     @abstractmethod
     def _train_epoch(self, epoch):
         raise NotImplementedError
 
     @abstractmethod
-    def _test_model(self):
+    def _test_epoch(self):
         raise NotImplementedError
 
     def train(self):
@@ -94,12 +96,30 @@ class BaseTrainer(object):
 
             if epoch % self.save_period == 0:
                 self._save_checkpoint(epoch, save_best=best)
+
+            self.logger.log_epoch(log, os.path.join(self.checkpoint_dir, 'logs.json'))
+
         self._print_best()
         self._print_best_to_file()
         filename = os.path.join(self.checkpoint_dir, 'model_best.pth')
         state_dict = torch.load(filename)['state_dict']
         self.model.load_state_dict(state_dict)
-        self._test_model()
+
+    def test(self):
+        log, test_ids, test_res, test_gts = self._test_epoch()
+
+        record_table = pd.DataFrame({
+            'image_id': test_ids,
+            'ground_truth': test_gts,
+            'inference': test_res
+        })
+        self.logger.log_table(record_table, os.path.join(self.checkpoint_dir, 'test_inference.csv'))
+        if self.args.logger == 'wandb':
+            path = os.path.join(self.checkpoint_dir, 'model_best.pth')
+        else:
+            path = os.path.join(self.checkpoint_dir, 'test_metrics.json')
+        self.logger.log_model(log, path)
+
 
     def _print_best_to_file(self):
         crt_time = time.asctime(time.localtime(time.time()))
@@ -156,17 +176,6 @@ class BaseTrainer(object):
         print("Checkpoint loaded. Resume training from epoch {}".format(self.start_epoch))
 
     def _record_best(self, log):
-        try:
-            import wandb
-            log_dict = log.copy()
-            epoch = log_dict.pop('epoch')
-            wandb.log(log_dict, step=epoch)
-        except ModuleNotFoundError:
-            import json
-            log_training_path = os.path.join(self.checkpoint_dir, 'logs.json')
-            with open(log_training_path, 'a') as f:
-                f.write(f'{json.dumps(log)}\n')
-
         improved_val = (self.mnt_mode == 'min' and log[self.mnt_metric] <= self.best_recorder['val'][
             self.mnt_metric]) or \
                        (self.mnt_mode == 'max' and log[self.mnt_metric] >= self.best_recorder['val'][self.mnt_metric])
@@ -223,7 +232,7 @@ class Trainer(BaseTrainer):
 
         return log
 
-    def _test_model(self):
+    def _test_epoch(self):
         self.model.eval()
         with torch.no_grad():
             test_ids, test_gts, test_res = [], [], []
@@ -239,15 +248,4 @@ class Trainer(BaseTrainer):
             test_met = self.metric_ftns({i: [gt] for i, gt in enumerate(test_gts)},
                                         {i: [re] for i, re in enumerate(test_res)})
 
-        import json
-        log_path = os.path.join(self.checkpoint_dir, 'test_eval.json')
-        with open(log_path, 'a') as f:
-            f.write(f'{json.dumps({"test/" + k: v for k, v in test_met.items()})}\n')
-
-        record_path = os.path.join(self.checkpoint_dir, 'inference.csv')
-        record_table = pd.DataFrame({
-            'image_id': test_ids,
-            'ground_truth': test_gts,
-            'inference': test_res
-        })
-        record_table.to_csv(record_path, index=False)
+        return test_met, test_ids, test_res, test_gts

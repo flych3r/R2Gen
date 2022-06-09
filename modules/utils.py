@@ -56,7 +56,7 @@ def repeat_tensors(n, x):
     return x
 
 
-def parse_args(args_str):
+def parse_args(args_str=None):
     parser = argparse.ArgumentParser()
 
     # Data input settings
@@ -87,6 +87,7 @@ def parse_args(args_str):
     parser.add_argument('--pad_idx', type=int, default=0, help='the index of <pad>.')
     parser.add_argument('--use_bn', type=int, default=0, help='whether to use batch normalization.')
     parser.add_argument('--drop_prob_lm', type=float, default=0.5, help='the dropout rate of the output layer.')
+
     # for Relational Memory
     parser.add_argument('--rm_num_slots', type=int, default=3, help='the number of memory slots.')
     parser.add_argument('--rm_num_heads', type=int, default=8, help='the numebr of heads in rm.')
@@ -111,6 +112,7 @@ def parse_args(args_str):
     parser.add_argument('--monitor_mode', type=str, default='max', choices=['min', 'max'], help='whether to max or min the metric.')
     parser.add_argument('--monitor_metric', type=str, default='BLEU_4', help='the metric to be monitored.')
     parser.add_argument('--early_stop', type=int, default=50, help='the patience of training.')
+    parser.add_argument('--logger', type=str, default=None, help='the type of logger [file or wanbd]')
 
     # Optimization
     parser.add_argument('--optim', type=str, default='Adam', help='the type of the optimizer.')
@@ -128,5 +130,8 @@ def parse_args(args_str):
     parser.add_argument('--seed', type=int, default=9233, help='.')
     parser.add_argument('--resume', type=str, help='whether to resume the training from existing checkpoints.')
 
-    args = parser.parse_args(args_str.split())
+    if args_str is not None:
+        args = parser.parse_args(args_str.split())
+    else:
+        args = parser.parse_args()
     return args
