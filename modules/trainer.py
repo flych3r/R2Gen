@@ -97,7 +97,8 @@ class BaseTrainer(object):
         self._print_best()
         self._print_best_to_file()
         filename = os.path.join(self.checkpoint_dir, 'model_best.pth')
-        self.model.load_state_dict(torch.load(filename))
+        state_dict = torch.load(filename)['state_dict']
+        self.model.load_state_dict(state_dict)
         self._test_model()
 
     def _print_best_to_file(self):
