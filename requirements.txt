@@ -5,3 +5,5 @@ torchvision
 transformers
 pandas
 gdown
+wandb
+tqdm

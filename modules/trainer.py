@@ -4,6 +4,7 @@ from abc import abstractmethod
 import time
 import torch
 import pandas as pd
+from tqdm.auto import tqdm
 from numpy import inf
 
 
@@ -50,7 +51,7 @@ class BaseTrainer(object):
 
     def train(self):
         not_improved_count = 0
-        for epoch in range(self.start_epoch, self.epochs + 1):
+        for epoch in tqdm(range(self.start_epoch, self.epochs + 1)):
             result = self._train_epoch(epoch)
 
             # save logged informations into log dict
