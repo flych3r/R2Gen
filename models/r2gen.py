@@ -11,8 +11,12 @@ class R2GenModel(nn.Module):
         super(R2GenModel, self).__init__()
         self.args = args
         self.tokenizer = tokenizer
-        # self.visual_extractor = VisualExtractor(args)
-        self.visual_extractor = VitVisualExtractor(args)
+        if args.visual_extractor == 'resnet':
+            self.visual_extractor = VisualExtractor(args)
+        elif args.visual_extractor == 'vit':
+            self.visual_extractor = VitVisualExtractor(args)
+        else:
+            raise ValueError('visual-extractor must be resnet or vit')
         self.encoder_decoder = EncoderDecoder(args, tokenizer)
         if args.dataset_name == 'iu_xray':
             self.forward = self.forward_iu_xray
