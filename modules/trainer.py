@@ -108,6 +108,10 @@ class BaseTrainer(object):
     def test(self):
         log, test_ids, test_res, test_gts = self._test_epoch()
 
+                # print logged informations to the screen
+        for key, value in log.items():
+            print('\t{:15s}: {}'.format(str(key), value))
+
         record_table = pd.DataFrame({
             'image_id': test_ids,
             'ground_truth': test_gts,
