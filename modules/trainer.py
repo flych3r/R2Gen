@@ -38,6 +38,8 @@ class BaseTrainer(object):
 
         if not os.path.exists(self.checkpoint_dir):
             os.makedirs(self.checkpoint_dir)
+        if not os.path.exists(self.args.record_dir):
+            os.makedirs(self.args.record_dir)
 
         if args.resume is not None:
             self._resume_checkpoint(args.resume)
