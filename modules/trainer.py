@@ -97,7 +97,7 @@ class BaseTrainer(object):
             if epoch % self.save_period == 0:
                 self._save_checkpoint(epoch, save_best=best)
 
-            self.logger.log_epoch(log, os.path.join(self.checkpoint_dir, 'logs.json'))
+            self.logger.log_epoch(log)
 
         self._print_best()
         self._print_best_to_file()
@@ -116,13 +116,8 @@ class BaseTrainer(object):
             'ground_truth': test_gts,
             'inference': test_res
         })
-        self.logger.log_table(record_table, os.path.join(self.checkpoint_dir, 'test_inference.csv'))
-        if self.args.logger == 'wandb':
-            path = os.path.join(self.checkpoint_dir, 'model_best.pth')
-        else:
-            path = os.path.join(self.checkpoint_dir, 'test_metrics.json')
-        self.logger.log_model(log, path)
-
+        self.logger.log_table(record_table)
+        self.logger.log_model(log, 'model_best.pth')
 
     def _print_best_to_file(self):
         crt_time = time.asctime(time.localtime(time.time()))
