@@ -34,7 +34,7 @@ class BaseTrainer(object):
         self.mnt_best = inf if self.mnt_mode == 'min' else -inf
         self.early_stop = getattr(self.args, 'early_stop', inf)
 
-        self.start_step = 1
+        self.start_step = 0
         self.checkpoint_dir = args.save_dir
 
         if not os.path.exists(self.checkpoint_dir):
@@ -76,6 +76,7 @@ class BaseTrainer(object):
                 step_loss = self._train_step(train_images, train_reports_ids, train_reports_masks)
                 train_loss.append(step_loss)
                 step += 1
+
                 if step % self.eval_steps == 0:
                     self.model.eval()
                     with torch.no_grad():
@@ -84,53 +85,57 @@ class BaseTrainer(object):
                             reports, ground_truths = self._val_step(val_images, val_reports_ids, val_reports_masks)
                             val_res.extend(reports)
                             val_gts.extend(ground_truths)
-                        val_met = self.metric_ftns(
-                            {i: [gt] for i, gt in enumerate(val_gts)},
-                            {i: [re] for i, re in enumerate(val_res)}
-                        )
-                        log = {
-                            'step': step,
-                            'train/loss': mean(train_loss)
-                        }
-                        log.update(**{'val/' + k: v for k, v in val_met.items()})
-                        self.logger.log_step(log)
 
-                        self._record_best(log)
+                    val_met = self.metric_ftns(
+                        {i: [gt] for i, gt in enumerate(val_gts)},
+                        {i: [re] for i, re in enumerate(val_res)}
+                    )
+                    log = {
+                        'step': step,
+                        'train/loss': mean(train_loss)
+                    }
+                    log.update(**{'val/' + k: v for k, v in val_met.items()})
+                    self.logger.log_step(log)
+                    self._record_best(log)
 
-                        # print logged informations to the screen
-                        for key, value in log.items():
-                            print('\t{:15s}: {}'.format(str(key), value))
+                    # print logged informations to the screen
+                    for key, value in log.items():
+                        print('\t{:15s}: {}'.format(str(key), value))
 
-                        # evaluate model performance according to configured metric, save best checkpoint as model_best
-                        best = False
-                        if self.mnt_mode != 'off':
-                            try:
-                                # check whether model performance improved or not, according to specified metric(mnt_metric)
-                                improved = (self.mnt_mode == 'min' and log[self.mnt_metric] <= self.mnt_best) or \
-                                        (self.mnt_mode == 'max' and log[self.mnt_metric] >= self.mnt_best)
-                            except KeyError:
-                                print("Warning: Metric '{}' is not found. " "Model performance monitoring is disabled.".format(
-                                    self.mnt_metric))
-                                self.mnt_mode = 'off'
-                                improved = False
+                    train_loss = []
 
-                            if improved:
-                                self.mnt_best = log[self.mnt_metric]
-                                not_improved_count = 0
-                                best = True
-                            else:
-                                not_improved_count += 1
+                    # evaluate model performance according to configured metric, save best checkpoint as model_best
+                    best = False
+                    if self.mnt_mode != 'off':
+                        try:
+                            # check whether model performance improved or not, according to specified metric(mnt_metric)
+                            improved = (self.mnt_mode == 'min' and log[self.mnt_metric] <= self.mnt_best) or \
+                                    (self.mnt_mode == 'max' and log[self.mnt_metric] >= self.mnt_best)
+                        except KeyError:
+                            print("Warning: Metric '{}' is not found. " "Model performance monitoring is disabled.".format(
+                                self.mnt_metric))
+                            self.mnt_mode = 'off'
+                            improved = False
 
-                        train_loss = []
-                        pbar.update(1)
-                        self._save_checkpoint(step, save_best=best)
-                        if not_improved_count > self.early_stop:
-                            print("Validation performance didn\'t improve for {} steps. " "Training stops.".format(
-                                self.early_stop))
-                            break
-                        if step > self.steps:
-                            break
+                        if improved:
+                            self.mnt_best = log[self.mnt_metric]
+                            not_improved_count = 0
+                            best = True
+                        else:
+                            not_improved_count += 1
+
+                    self._save_checkpoint(step, save_best=best)
+                    if not_improved_count > self.early_stop:
+                        print("Validation performance didn\'t improve for {} steps. " "Training stops.".format(
+                            self.early_stop))
+                        break
+
+                pbar.update(1)
+                if step >= self.steps:
+                    break
+
             self.lr_scheduler.step()
+
         self._print_best()
         self._print_best_to_file()
         filename = os.path.join(self.checkpoint_dir, 'model_best.pth')

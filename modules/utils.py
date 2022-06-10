@@ -111,7 +111,7 @@ def parse_args(args_str=None):
     parser.add_argument('--eval_steps', type=int, default=250, help='the saving period.')
     parser.add_argument('--monitor_mode', type=str, default='max', choices=['min', 'max'], help='whether to max or min the metric.')
     parser.add_argument('--monitor_metric', type=str, default='BLEU_4', help='the metric to be monitored.')
-    parser.add_argument('--early_stop', type=int, default=250, help='the patience of training.')
+    parser.add_argument('--early_stop', type=int, default=5, help='the patience of training.')
     parser.add_argument('--logger', type=str, default=None, help='the type of logger [file or wanbd]')
 
     # Optimization
