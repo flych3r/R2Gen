@@ -261,7 +261,7 @@ class Trainer(BaseTrainer):
         self.model.eval()
         with torch.no_grad():
             test_ids, test_gts, test_res = [], [], []
-            for batch_idx, (images_id, images, reports_ids, reports_masks) in enumerate(self.test_dataloader):
+            for images_id, images, reports_ids, reports_masks in tqdm(self.test_dataloader, total=len(self.test_dataloader)):
                 images, reports_ids, reports_masks = images.to(self.device), reports_ids.to(
                     self.device), reports_masks.to(self.device)
                 output = self.model(images, mode='sample')
