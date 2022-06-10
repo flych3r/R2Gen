@@ -59,7 +59,7 @@ class R2DataLoader(DataLoader):
                 transforms.Normalize(img_mean, img_std)
             ])
         elif self.args.visual_extractor == 'resnet':
-            img_mean = (0.485, 0.456, 0.406),
+            img_mean = (0.485, 0.456, 0.406)
             img_std = (0.229, 0.224, 0.225)
 
             if split == 'train':
