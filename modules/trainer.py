@@ -1,5 +1,6 @@
 import os
 from abc import abstractmethod
+from statistics import mean
 
 import time
 import torch
@@ -23,8 +24,8 @@ class BaseTrainer(object):
         self.metric_ftns = metric_ftns
         self.optimizer = optimizer
 
-        self.epochs = self.args.epochs
-        self.save_period = self.args.save_period
+        self.steps = self.args.steps
+        self.eval_steps = self.args.eval_steps
 
         self.mnt_mode = args.monitor_mode
         self.mnt_metric = 'val/' + args.monitor_metric
@@ -33,7 +34,7 @@ class BaseTrainer(object):
         self.mnt_best = inf if self.mnt_mode == 'min' else -inf
         self.early_stop = getattr(self.args, 'early_stop', inf)
 
-        self.start_epoch = 1
+        self.start_step = 1
         self.checkpoint_dir = args.save_dir
 
         if not os.path.exists(self.checkpoint_dir):
@@ -52,7 +53,11 @@ class BaseTrainer(object):
         )
 
     @abstractmethod
-    def _train_epoch(self, epoch):
+    def _train_step(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    def _val_step(self):
         raise NotImplementedError
 
     @abstractmethod
@@ -61,48 +66,71 @@ class BaseTrainer(object):
 
     def train(self):
         not_improved_count = 0
-        for epoch in tqdm(range(self.start_epoch, self.epochs + 1)):
-            result = self._train_epoch(epoch)
+        step = self.start_step
+        train_loss = []
 
-            # save logged informations into log dict
-            log = {'epoch': epoch}
-            log.update(result)
-            self._record_best(log)
+        pbar = tqdm(total=self.steps)
+        while step < self.steps:
+            self.model.train()
+            for train_images_id, train_images, train_reports_ids, train_reports_masks in self.train_dataloader:
+                step_loss = self._train_step(train_images, train_reports_ids, train_reports_masks)
+                train_loss.append(step_loss)
+                step += 1
+                if step % self.eval_steps == 0:
+                    self.model.eval()
+                    with torch.no_grad():
+                        val_gts, val_res = [], []
+                        for val_images_id, val_images, val_reports_ids, val_reports_masks in self.val_dataloader:
+                            reports, ground_truths = self._val_step(val_images, val_reports_ids, val_reports_masks)
+                            val_res.extend(reports)
+                            val_gts.extend(ground_truths)
+                        val_met = self.metric_ftns(
+                            {i: [gt] for i, gt in enumerate(val_gts)},
+                            {i: [re] for i, re in enumerate(val_res)}
+                        )
+                        log = {
+                            'step': step,
+                            'train/loss': mean(train_loss)
+                        }
+                        log.update(**{'val/' + k: v for k, v in val_met.items()})
+                        self.logger.log_step(log)
 
-            # print logged informations to the screen
-            for key, value in log.items():
-                print('\t{:15s}: {}'.format(str(key), value))
+                        self._record_best(log)
 
-            # evaluate model performance according to configured metric, save best checkpoint as model_best
-            best = False
-            if self.mnt_mode != 'off':
-                try:
-                    # check whether model performance improved or not, according to specified metric(mnt_metric)
-                    improved = (self.mnt_mode == 'min' and log[self.mnt_metric] <= self.mnt_best) or \
-                               (self.mnt_mode == 'max' and log[self.mnt_metric] >= self.mnt_best)
-                except KeyError:
-                    print("Warning: Metric '{}' is not found. " "Model performance monitoring is disabled.".format(
-                        self.mnt_metric))
-                    self.mnt_mode = 'off'
-                    improved = False
+                        # print logged informations to the screen
+                        for key, value in log.items():
+                            print('\t{:15s}: {}'.format(str(key), value))
 
-                if improved:
-                    self.mnt_best = log[self.mnt_metric]
-                    not_improved_count = 0
-                    best = True
-                else:
-                    not_improved_count += 1
+                        # evaluate model performance according to configured metric, save best checkpoint as model_best
+                        best = False
+                        if self.mnt_mode != 'off':
+                            try:
+                                # check whether model performance improved or not, according to specified metric(mnt_metric)
+                                improved = (self.mnt_mode == 'min' and log[self.mnt_metric] <= self.mnt_best) or \
+                                        (self.mnt_mode == 'max' and log[self.mnt_metric] >= self.mnt_best)
+                            except KeyError:
+                                print("Warning: Metric '{}' is not found. " "Model performance monitoring is disabled.".format(
+                                    self.mnt_metric))
+                                self.mnt_mode = 'off'
+                                improved = False
 
-                if not_improved_count > self.early_stop:
-                    print("Validation performance didn\'t improve for {} epochs. " "Training stops.".format(
-                        self.early_stop))
-                    break
+                            if improved:
+                                self.mnt_best = log[self.mnt_metric]
+                                not_improved_count = 0
+                                best = True
+                            else:
+                                not_improved_count += 1
 
-            if epoch % self.save_period == 0:
-                self._save_checkpoint(epoch, save_best=best)
-
-            self.logger.log_epoch(log)
-
+                        train_loss = []
+                        pbar.update(1)
+                        self._save_checkpoint(step, save_best=best)
+                        if not_improved_count > self.early_stop:
+                            print("Validation performance didn\'t improve for {} steps. " "Training stops.".format(
+                                self.early_stop))
+                            break
+                        if step > self.steps:
+                            break
+            self.lr_scheduler.step()
         self._print_best()
         self._print_best_to_file()
         filename = os.path.join(self.checkpoint_dir, 'model_best.pth')
@@ -151,9 +179,9 @@ class BaseTrainer(object):
         list_ids = list(range(n_gpu_use))
         return device, list_ids
 
-    def _save_checkpoint(self, epoch, save_best=False):
+    def _save_checkpoint(self, step, save_best=False):
         state = {
-            'epoch': epoch,
+            'step': step,
             'state_dict': self.model.state_dict(),
             'optimizer': self.optimizer.state_dict(),
             'monitor_best': self.mnt_best
@@ -170,12 +198,12 @@ class BaseTrainer(object):
         resume_path = str(resume_path)
         print("Loading checkpoint: {} ...".format(resume_path))
         checkpoint = torch.load(resume_path)
-        self.start_epoch = checkpoint['epoch'] + 1
+        self.start_step = checkpoint['step'] + 1
         self.mnt_best = checkpoint['monitor_best']
         self.model.load_state_dict(checkpoint['state_dict'])
         self.optimizer.load_state_dict(checkpoint['optimizer'])
 
-        print("Checkpoint loaded. Resume training from epoch {}".format(self.start_epoch))
+        print("Checkpoint loaded. Resume training from step {}".format(self.start_step))
 
     def _record_best(self, log):
         improved_val = (self.mnt_mode == 'min' and log[self.mnt_metric] <= self.best_recorder['val'][
@@ -199,40 +227,30 @@ class Trainer(BaseTrainer):
         self.val_dataloader = val_dataloader
         self.test_dataloader = test_dataloader
 
-    def _train_epoch(self, epoch):
+    def _train_step(self, images, reports_ids, reports_masks):
+        images, reports_ids, reports_masks = (
+            images.to(self.device),
+            reports_ids.to(self.device),
+            reports_masks.to(self.device)
+        )
+        output = self.model(images, reports_ids, mode='train')
+        loss = self.criterion(output, reports_ids, reports_masks)
+        self.optimizer.zero_grad()
+        loss.backward()
+        torch.nn.utils.clip_grad_value_(self.model.parameters(), 0.1)
+        self.optimizer.step()
+        return loss.item()
 
-        train_loss = 0
-        self.model.train()
-        for batch_idx, (images_id, images, reports_ids, reports_masks) in enumerate(self.train_dataloader):
-            images, reports_ids, reports_masks = images.to(self.device), reports_ids.to(self.device), reports_masks.to(
-                self.device)
-            output = self.model(images, reports_ids, mode='train')
-            loss = self.criterion(output, reports_ids, reports_masks)
-            train_loss += loss.item()
-            self.optimizer.zero_grad()
-            loss.backward()
-            torch.nn.utils.clip_grad_value_(self.model.parameters(), 0.1)
-            self.optimizer.step()
-        log = {'train/loss': train_loss / len(self.train_dataloader)}
-
-        self.model.eval()
-        with torch.no_grad():
-            val_gts, val_res = [], []
-            for batch_idx, (images_id, images, reports_ids, reports_masks) in enumerate(self.val_dataloader):
-                images, reports_ids, reports_masks = images.to(self.device), reports_ids.to(
-                    self.device), reports_masks.to(self.device)
-                output = self.model(images, mode='sample')
-                reports = self.model.tokenizer.decode_batch(output.cpu().numpy())
-                ground_truths = self.model.tokenizer.decode_batch(reports_ids[:, 1:].cpu().numpy())
-                val_res.extend(reports)
-                val_gts.extend(ground_truths)
-            val_met = self.metric_ftns({i: [gt] for i, gt in enumerate(val_gts)},
-                                       {i: [re] for i, re in enumerate(val_res)})
-            log.update(**{'val/' + k: v for k, v in val_met.items()})
-
-        self.lr_scheduler.step()
-
-        return log
+    def _val_step(self,  images, reports_ids, reports_masks):
+        images, reports_ids, reports_masks = (
+            images.to(self.device),
+            reports_ids.to(self.device),
+            reports_masks.to(self.device)
+        )
+        output = self.model(images, mode='sample')
+        reports = self.model.tokenizer.decode_batch(output.cpu().numpy())
+        ground_truths = self.model.tokenizer.decode_batch(reports_ids[:, 1:].cpu().numpy())
+        return reports, ground_truths
 
     def _test_epoch(self):
         self.model.eval()
