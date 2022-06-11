@@ -105,13 +105,13 @@ def parse_args(args_str=None):
 
     # Trainer settings
     parser.add_argument('--n_gpu', type=int, default=1, help='the number of gpus to be used.')
-    parser.add_argument('--epochs', type=int, default=100, help='the number of training epochs.')
+    parser.add_argument('--steps', type=int, default=1000, help='the number of training steps.')
     parser.add_argument('--save_dir', type=str, default='results/iu_xray', help='the patch to save the models.')
     parser.add_argument('--record_dir', type=str, default='records/', help='the patch to save the results of experiments')
-    parser.add_argument('--save_period', type=int, default=1, help='the saving period.')
+    parser.add_argument('--eval_steps', type=int, default=250, help='the saving period.')
     parser.add_argument('--monitor_mode', type=str, default='max', choices=['min', 'max'], help='whether to max or min the metric.')
     parser.add_argument('--monitor_metric', type=str, default='BLEU_4', help='the metric to be monitored.')
-    parser.add_argument('--early_stop', type=int, default=50, help='the patience of training.')
+    parser.add_argument('--early_stop', type=int, default=5, help='the patience of training.')
     parser.add_argument('--logger', type=str, default=None, help='the type of logger [file or wanbd]')
 
     # Optimization

@@ -8,7 +8,7 @@ class FileLogger:
         self.log_dir = Path(log_dir)
         self.model_name = model_name
 
-    def log_epoch(self, log):
+    def log_step(self, log):
         with open(self.log_dir / 'run-logs.json', 'a') as f:
             f.write(f'{json.dumps(log)}\n')
 
@@ -26,11 +26,11 @@ class WandbLogger(FileLogger):
     def __init__(self, log_dir, model_name):
         super(WandbLogger, self).__init__(log_dir, model_name)
 
-    def log_epoch(self, log):
-        super().log_epoch(log)
+    def log_step(self, log):
+        super().log_step(log)
         log_dict = log.copy()
-        epoch = log_dict.pop('epoch')
-        wandb.log(log_dict, step=epoch)
+        step = log_dict.pop('step')
+        wandb.log(log_dict, step=step)
 
     def log_table(self, dataframe):
         super().log_table(dataframe)
