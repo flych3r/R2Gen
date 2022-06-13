@@ -133,7 +133,7 @@ class BaseTrainer(object):
                 pbar.update(1)
                 if step >= self.steps:
                     break
-                self.lr_scheduler.step()
+                # self.lr_scheduler.step()
 
         self._print_best()
         self._print_best_to_file()
