@@ -132,7 +132,6 @@ class BaseTrainer(object):
                 if step >= self.steps:
                     break
 
-
         self._print_best()
         self._print_best_to_file()
         filename = os.path.join(self.checkpoint_dir, 'model_best.pth')
