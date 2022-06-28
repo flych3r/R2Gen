@@ -123,8 +123,8 @@ def parse_args(args_str=None):
 
     # Learning Rate Scheduler
     parser.add_argument('--lr_scheduler', type=str, default='StepLR', help='the type of the learning rate scheduler.')
-    parser.add_argument('--step_size', type=int, default=50, help='the step size of the learning rate scheduler.')
-    parser.add_argument('--gamma', type=float, default=0.1, help='the gamma of the learning rate scheduler.')
+    parser.add_argument('--lr_scheduler_step_size', type=int, default=50, help='the step size of the learning rate scheduler.')
+    parser.add_argument('--lr_scheduler_gamma', type=float, default=0.1, help='the gamma of the learning rate scheduler.')
 
     # Others
     parser.add_argument('--seed', type=int, default=9233, help='.')

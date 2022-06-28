@@ -14,5 +14,5 @@ def build_optimizer(args, model):
 
 
 def build_lr_scheduler(args, optimizer):
-    lr_scheduler = getattr(torch.optim.lr_scheduler, args.lr_scheduler)(optimizer, args.step_size, args.gamma)
+    lr_scheduler = getattr(torch.optim.lr_scheduler, args.lr_scheduler)(optimizer, args.lr_scheduler_step_size, args.lr_scheduler_gamma)
     return lr_scheduler

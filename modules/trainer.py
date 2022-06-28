@@ -71,14 +71,12 @@ class BaseTrainer(object):
 
         pbar = tqdm(total=self.steps)
         while step < self.steps:
-            self.model.train()
             for train_images_id, train_images, train_reports_ids, train_reports_masks in self.train_dataloader:
                 step_loss = self._train_step(train_images, train_reports_ids, train_reports_masks)
                 train_loss.append(step_loss)
                 step += 1
 
                 if step % self.eval_steps == 0:
-                    self.model.eval()
                     with torch.no_grad():
                         val_gts, val_res = [], []
                         for val_images_id, val_images, val_reports_ids, val_reports_masks in self.val_dataloader:
@@ -134,7 +132,6 @@ class BaseTrainer(object):
                 if step >= self.steps:
                     break
 
-            self.lr_scheduler.step()
 
         self._print_best()
         self._print_best_to_file()
@@ -233,6 +230,7 @@ class Trainer(BaseTrainer):
         self.test_dataloader = test_dataloader
 
     def _train_step(self, images, reports_ids, reports_masks):
+        self.model.train()
         images, reports_ids, reports_masks = (
             images.to(self.device),
             reports_ids.to(self.device),
@@ -244,9 +242,11 @@ class Trainer(BaseTrainer):
         loss.backward()
         torch.nn.utils.clip_grad_value_(self.model.parameters(), 0.1)
         self.optimizer.step()
+        self.lr_scheduler.step()
         return loss.item()
 
     def _val_step(self,  images, reports_ids, reports_masks):
+        self.model.eval()
         images, reports_ids, reports_masks = (
             images.to(self.device),
             reports_ids.to(self.device),

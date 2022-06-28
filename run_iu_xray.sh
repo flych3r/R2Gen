@@ -7,8 +7,8 @@ python main.py \
     --batch_size 32 \
     --epochs 70 \
     --save_dir results/iu_xray \
-    --step_size 50 \
-    --gamma 0.1 \
+    --lr_scheduler_step_size 50 \
+    --lr_scheduler_gamma 0.1 \
     --seed 9223 \
     --visual_extractor resnet \
     --d_vf 2048 \

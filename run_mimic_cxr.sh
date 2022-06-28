@@ -7,6 +7,6 @@ python main.py \
 --batch_size 16 \
 --epochs 30 \
 --save_dir results/mimic_cxr \
---step_size 1 \
---gamma 0.8 \
+--lr_scheduler_step_size 1 \
+--lr_scheduler_gamma 0.8 \
 --seed 456789
